@@ -1,0 +1,67 @@
+#include <Stepper.h>
+#include <Adafruit_NeoPixel.h>
+
+const int photoPin = A0;  
+const int threshold = 29; 
+const int neoPixelPin = 10;  
+const int numPixels = 40;    
+Adafruit_NeoPixel strip(numPixels, neoPixelPin, NEO_GRB + NEO_KHZ800);
+const int stepsPerRevolution = 2048; 
+const int stepPin6 = 6;  
+const int stepPin5 = 5;  
+const int stepPin4 = 4; 
+const int stepPin3 = 3; 
+Stepper myStepper(stepsPerRevolution, stepPin6, stepPin5, stepPin4, stepPin3);
+const int ledPin = 2;
+
+bool fadingMode = true; 
+unsigned long patternStartTime = 0; 
+
+void setup() {
+  strip.begin();
+  strip.show(); 
+  myStepper.setSpeed(10);  
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+  Serial.begin(9600); 
+}
+
+void loop() {
+  int lightLevel = analogRead(photoPin); 
+
+  if (lightLevel < threshold) { 
+    if (digitalRead(ledPin) == LOW) { 
+      digitalWrite(ledPin, HIGH);  
+      patternStartTime = millis(); 
+    }
+    
+    unsigned long currentTime = millis();
+
+    if (fadingMode) {
+      int brightness = (sin(currentTime / 4000.0 * TWO_PI) * 127 + 128); 
+      for (int i = 0; i < numPixels; i++) {
+        strip.setPixelColor(i, strip.Color(brightness, brightness, brightness));  
+      }
+    } else {
+      for (int i = 0; i < numPixels; i++) {
+        if (i % 2 == 0) {
+          strip.setPixelColor(i, strip.Color(255, 0, 0)); 
+        } else {
+          strip.setPixelColor(i, strip.Color(255, 255, 255)); 
+        }
+      }
+    }
+    strip.show();
+    myStepper.step(stepsPerRevolution / 100); 
+  } else { 
+    if (digitalRead(ledPin) == HIGH) { 
+      digitalWrite(ledPin, LOW); 
+    }
+
+    for (int i = 0; i < numPixels; i++) {
+      strip.setPixelColor(i, strip.Color(0, 0, 0));
+    }
+    strip.show();
+  }
+  delay(10);
+}
